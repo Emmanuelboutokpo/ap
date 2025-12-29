@@ -16,14 +16,22 @@ enum FileType {
   IMAGE
 }
 
+enum UserStatus {
+  PENDING_OTP
+  PENDING_MC_APPROVAL
+  ACTIVE
+  REJECTED
+}
+
 model User {
   id            String   @id @default(uuid())
   fullName      String
   email         String   @unique
   password      String
   refreshToken  String?
+  
   role          Role     @default(CHORISTE)
-  isValidated   Boolean  @default(false)
+  status          UserStatus @default(PENDING_OTP)
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

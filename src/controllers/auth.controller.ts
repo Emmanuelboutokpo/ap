@@ -30,8 +30,7 @@ export const signUpEmail = async (req: Request, res: Response): Promise<void> =>
       data: {
         email,
         password: hashedPassword,
-        fullName,
-         isValidated: false,
+        fullName
       }
     });
 
@@ -50,6 +49,13 @@ export const signUpEmail = async (req: Request, res: Response): Promise<void> =>
 export const verifyOtp = async (req: Request, res: Response) => {
   const { email, otp } = req.body;
 
+  const user = await prisma.user.findUnique({ where: { email } });
+
+  if (!user) {
+    res.status(404).json({ message: "Utilisateur introuvable" });
+    return;
+  }
+
   if (!email || !otp) {
     res.status(400).json({ message: "Email et OTP requis" });
     return;
@@ -57,12 +63,20 @@ export const verifyOtp = async (req: Request, res: Response) => {
 
   const storedOtp = await redis.get(`otp:${email}`);
 
+
   if (!storedOtp || storedOtp !== otp) {
     res.status(400).json({ message: "OTP invalide ou expiré" });
     return;
   }
 
   await redis.del(`otp:${email}`);
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      status: "PENDING_MC_APPROVAL",
+    },
+  });
 
   res.status(200).json({
     message:
@@ -83,12 +97,12 @@ export const login = async (req: Request, res: Response) => {
       return;
     }
 
-    if (!user.isValidated) {
-      res.status(403).json({
-        message: "Compte en attente de validation par le Maitre de choeur",
-      });
-      return;
-    }
+     if (user.status !== "ACTIVE") {
+    return res.json({
+      status: user.status,
+      message: "Compte non actif",
+    });
+  }
 
     const accessToken = generateAccessToken({
       id: user.id,
@@ -221,8 +235,8 @@ export const validateUser = async (req: Request, res: Response) => {
   const { id } = req.params;
 
   const user = await prisma.user.update({
-    where: { id },
-    data: { isValidated: true },
+    where: { id},
+    data: { status: "ACTIVE" },
   });
 
   await sendConfirmationEmail(user.email, {
