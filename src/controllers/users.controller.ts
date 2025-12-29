@@ -212,7 +212,7 @@ export const getEmployeesAndControleurs = async (req: Request, res: Response): P
         email: true,
         role: true,
         fullName: true,
-        isValidated: true,
+        status: true,
         createdAt: true,
       },
     });
