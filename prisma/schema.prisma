@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  CHORISTE
+}
+
+enum FileType {
+  PDF
+  IMAGE
+}
+
+model User {
+  id            String   @id @default(uuid())
+  fullName      String
+  email         String   @unique
+  password      String
+  refreshToken  String?
+  role          Role     @default(CHORISTE)
+  isValidated   Boolean  @default(false)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  planches      Planche[]
+}
+
+model Category {
+  id            String        @id @default(uuid())
+  name          String        @unique
+  description   String?
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  subCategories SubCategory[]
+}
+
+model SubCategory {
+  id           String    @id @default(uuid())
+  name         String
+  categoryId   String
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  category     Category @relation(fields: [categoryId], references: [id])
+  planches     Planche[]
+
+  @@unique([name, categoryId])
+}
+
+model Planche {
+  id              String    @id @default(uuid())
+  title           String
+
+  /** 📄 Fichiers partitions (PDF / Images) */
+  files           String[]        // URLs Cloudinary
+  fileType        FileType
+
+  /** 🎵 Audios des chants */
+  audioFiles      String[]        // URLs Cloudinary (mp3, wav…)
+
+  subCategoryId   String
+  uploadedById    String
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  subCategory     SubCategory @relation(fields: [subCategoryId], references: [id])
+  uploadedBy      User        @relation(fields: [uploadedById], references: [id])
+
+  @@index([title])
+  @@index([subCategoryId])
+}
