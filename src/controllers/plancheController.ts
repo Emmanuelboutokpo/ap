@@ -238,6 +238,17 @@ export async function getPlancheById(req: Request, res: Response) {
   }
 }
   
+
+export async function getCatalogues(req: Request, res: Response) {
+ try {
+    const catalogues = await prisma.catalogue.findMany();
+    res.status(200).json(catalogues);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Erreur serveur." });
+  }
+}
+
 export async function updatePlanche(req: Request, res: Response) {
   try {
     const { id } = req.params

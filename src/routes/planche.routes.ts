@@ -1,6 +1,6 @@
 import { Router } from 'express';
 const router: Router = Router();
-import { createPlanche, deletePlanche, getPlancheById, getPlanches, updatePlanche } from '../controllers/plancheController';
+import { createPlanche, deletePlanche, getCatalogues, getPlancheById, getPlanches, updatePlanche } from '../controllers/plancheController';
 import upload from '../middlewares/uploadMiddleware';
 import { onlyMaitre, requireSignin } from '../middlewares/requireSignin';
 
@@ -26,6 +26,7 @@ router.put(
     updatePlanche
 );
 
+router.get("/catalogue", getCatalogues)
 router.get("/planche/:id", getPlancheById)
 router.get("/planches", getPlanches)
 router.delete("/planche/:id", onlyMaitre, deletePlanche)
