@@ -1,9 +1,13 @@
+import "dotenv/config";
+
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import readline from "readline";
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+   accelerateUrl: process.env.DATABASE_URL!
+});
 
 const ACCESS_ADMIN_SECRET = process.env.ACCESS_ADMIN_SECRET!;
 const REFRESH_ADMIN_SECRET = process.env.REFRESH_ADMIN_SECRET!;
@@ -76,6 +80,12 @@ async function createAdmin() {
       data: { refreshToken },
     });
 
+    console.log("\n✅ Admin créé avec succès\n");
+    console.log("Email:", email);
+    console.log("Role:", admin.role);
+    console.log("AccessToken:", accessToken);
+    console.log("RefreshToken:", refreshToken);
+    
     await prisma.$disconnect();
   } catch (error) {
     console.error("\n❌ Erreur:", error);

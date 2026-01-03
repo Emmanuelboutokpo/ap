@@ -8,7 +8,7 @@ export async function createPlanche(req: Request, res: Response) {
       return res.status(403).json({ message: "Accès refusé" })
     }
 
-    const { title, subCategoryId, fileType } = req.body
+    const { title, catalogueId, categoryId, subCategoryId,  fileType } = req.body
 
     const uploadedFiles: string[] = []
     const uploadedAudios: string[] = []
@@ -44,6 +44,36 @@ export async function createPlanche(req: Request, res: Response) {
       }
     }
 
+      const catalogueExists = await prisma.catalogue.findUnique({
+      where: { id: catalogueId }
+    })
+
+    if (!catalogueExists) {
+      return res.status(404).json({ message: "Catalogue non trouvé" })
+    }
+
+    const categoryExists = await prisma.category.findFirst({
+      where: { 
+        id: categoryId,
+        catalogueId: catalogueId
+      }
+    })
+
+    if (!categoryExists) {
+      return res.status(404).json({ message: "Catégorie non trouvée ou n'appartient pas au catalogue" })
+    }
+
+    const subCategoryExists = await prisma.subCategory.findFirst({
+      where: { 
+        id: subCategoryId,
+        categoryId: categoryId
+      }
+    })
+
+    if (!subCategoryExists) {
+      return res.status(404).json({ message: "Sous-catégorie non trouvée ou n'appartient pas à la catégorie" })
+    }
+
     /* ---------- Transaction Prisma ---------- */
     const planche = await prisma.$transaction(async (tx) => {
       return await tx.planche.create({
@@ -54,7 +84,27 @@ export async function createPlanche(req: Request, res: Response) {
           fileType,
           subCategoryId,
           uploadedById: req.user!.id,
-        } as any
+        } as any,
+
+        include: {
+          subCategory: {
+            include: {
+              category: {
+                include: {
+                  catalogue: true
+                }
+              }
+            }
+          },
+          
+          uploadedBy: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true
+            }
+          }
+        }
       })
     })
 

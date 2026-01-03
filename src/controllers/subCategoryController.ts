@@ -1,29 +1,6 @@
 import { Request, Response } from "express";
 import prisma from "../lib/prisma";
 
-export async function createSubCategory(req: Request, res: Response) {
-  try {
-    if (!req.user || req.user.role !== "ADMIN") {
-      return res.status(403).json({ message: "Accès refusé" })
-    }
-
-    const { name, categoryId } = req.body
-
-    const subCategory = await prisma.$transaction(async (tx) => {
-      return await tx.subCategory.create({
-        data: {
-          name,
-          categoryId
-        }
-      })
-    })
-
-    res.status(201).json({ success: true, data: subCategory })
-
-  } catch (err: any) {
-    res.status(500).json({ success: false, message: err.message })
-  }
-}
 
 export async function getSubCategories(req: Request, res: Response) {
   try {

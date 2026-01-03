@@ -1,27 +1,6 @@
 import { Request, Response } from "express";
 import prisma from "../lib/prisma";
 
-export async function createCategory(req: Request, res: Response) {
-  try {
-    if (!req.user || req.user.role !== "ADMIN") {
-      return res.status(403).json({ message: "Accès refusé" })
-    }
-
-    const { name, description } = req.body
-
-    const category = await prisma.$transaction(async (tx) => {
-      return await tx.category.create({
-        data: { name, description }
-      })
-    })
-
-    return res.status(201).json({ success: true, data: category })
-
-  } catch (err: any) {
-    res.status(500).json({ success: false, message: err.message })
-  }
-}
-
 export async function getCategories(req: Request, res: Response) {
   try {
     const page = Math.max(Number(req.query.page) || 1, 1)

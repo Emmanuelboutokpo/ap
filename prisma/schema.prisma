@@ -39,15 +39,32 @@ model User {
   planches      Planche[]
 }
 
+model Catalogue {
+  id          String     @id @default(uuid())
+  name        String     @unique
+  description String?
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  categories  Category[]
+}
+
+
 model Category {
   id            String        @id @default(uuid())
-  name          String        @unique
+  name          String
   description   String?
+
+  catalogueId   String
+  catalogue     Catalogue     @relation(fields: [catalogueId], references: [id])
 
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
   subCategories SubCategory[]
+
+  @@unique([name, catalogueId])
 }
 
 model SubCategory {
