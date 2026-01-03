@@ -6,16 +6,23 @@ export async function getCategories(req: Request, res: Response) {
     const page = Math.max(Number(req.query.page) || 1, 1)
     const limit = Math.min(Number(req.query.limit) || 10, 50)
     const search = req.query.search?.toString()
+    const catalogueId = req.query.catalogueId?.toString()
 
     const skip = (page - 1) * limit
 
     const where: any = {}
 
+    // 🔍 Filtre par nom
     if (search) {
       where.name = {
         contains: search,
         mode: "insensitive",
       }
+    }
+
+    // 📁 Filtre par catalogue
+    if (catalogueId) {
+      where.catalogueId = catalogueId
     }
 
     const [total, categories] = await prisma.$transaction([
@@ -54,6 +61,7 @@ export async function getCategories(req: Request, res: Response) {
     })
   }
 }
+
 
 export async function getCategoryById(req: Request, res: Response) {
   try {
