@@ -16,7 +16,7 @@ router.post(
 )
 
 router.put(
-  "/planches/:id",
+  "/planche/:id",
   requireSignin,
     onlyMaitre,
     upload.fields([
@@ -26,9 +26,9 @@ router.put(
     updatePlanche
 );
 
-router.get("/:id", getPlancheById)
-router.get("/", getPlanches)
-router.delete("/:id", onlyMaitre, deletePlanche)
+router.get("/planche/:id", getPlancheById)
+router.get("/planches", getPlanches)
+router.delete("/planche/:id", onlyMaitre, deletePlanche)
 
 
 export default router;
