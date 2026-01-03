@@ -4,9 +4,9 @@ import { onlyMaitre } from "../middlewares/requireSignin"
 
 const router = Router()
 
-router.get("/", getCategories)
-router.get("/:id", getCategoryById)
-router.put("/:id", onlyMaitre, updateCategory)
-router.delete("/:id", onlyMaitre, deleteCategory)
+router.get("/categories", getCategories)
+router.get("/category/:id", getCategoryById)
+router.put("/category/:id", onlyMaitre, updateCategory)
+router.delete("/category/:id", onlyMaitre, deleteCategory)
 
 export default router
