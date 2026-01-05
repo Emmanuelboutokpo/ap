@@ -9,7 +9,7 @@ router.post(
   requireSignin,
   onlyMaitre,
   upload.fields([
-    { name: "files", maxCount: 10 },
+    { name: "planche", maxCount: 10 },
     { name: "audios", maxCount: 10 },
   ]),
   createPlanche
@@ -20,7 +20,7 @@ router.put(
   requireSignin,
     onlyMaitre,
     upload.fields([
-        { name: "files", maxCount: 10 },
+        { name: "planche", maxCount: 10 },
         { name: "audios", maxCount: 10 },
     ]),
     updatePlanche

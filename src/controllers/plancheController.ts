@@ -8,25 +8,25 @@ export async function createPlanche(req: Request, res: Response) {
       return res.status(403).json({ message: "Accès refusé" })
     }
 
-    const { title, subCategoryId,  fileType } = req.body
+    const { title, subCategoryId } = req.body
 
     const uploadedFiles: string[] = []
     const uploadedAudios: string[] = []
 
     const files = req.files as {
-      files?: Express.Multer.File[]
+      planche?: Express.Multer.File[]
       audios?: Express.Multer.File[]
     }
 
-    if (!files?.files?.length) {
+    if (!files?.planche?.length) {
       return res.status(400).json({ message: "Fichiers PDF ou images requis" })
     }
 
     /* ---------- Upload PDF / Images ---------- */
-    for (const file of files.files) {
+    for (const file of files.planche) {
       const upload = await cloudinary.uploader.upload(file.path, {
         folder: "mont-sinai/planches",
-        resource_type: fileType === "IMAGE" ? "image" : "raw",
+        resource_type:  "image",
         timeout: 60000,
       })
       uploadedFiles.push(upload.secure_url)
@@ -59,9 +59,8 @@ export async function createPlanche(req: Request, res: Response) {
       return await tx.planche.create({
         data: {
           title,
-          files: uploadedFiles,
-          audioFiles: uploadedAudios,
-          fileType,
+          planche: uploadedFiles,
+          audio: uploadedAudios,
           subCategoryId,
           uploadedById: req.user!.id,
         } as any,

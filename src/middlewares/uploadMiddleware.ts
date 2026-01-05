@@ -11,10 +11,8 @@ if (!fs.existsSync(uploadFolderPath)) {
 
 // ✅ CORRECTION : Ajout des nouveaux champs modelImages et tissuImages
 const allowedFileTypes: Record<string, RegExp> = {
-  // Anciens champs (gardés pour compatibilité)
   planche: /\.(jpg|jpeg|png|pdf)$/i,
   audio: /\.(mp3|mp4|ogg|3gpp|wav|m4a)$/i,
-
 };
 
 const fileFilter = (
@@ -25,7 +23,6 @@ const fileFilter = (
   try {
     const allowedPattern = allowedFileTypes[file.fieldname];
     if (!allowedPattern) {
-      // ✅ Message d'erreur plus informatif avec les champs autorisés
       const allowedFields = Object.keys(allowedFileTypes).join(', ');
       return cb(new Error(
         `Le champ "${file.fieldname}" n'est pas autorisé. ` +
@@ -33,7 +30,6 @@ const fileFilter = (
       ));
     }
 
-    // Vérifie si le fichier correspond au pattern
     if (!allowedPattern.test(file.originalname)) {
       const expectedTypes = file.fieldname.includes('image') ? 'JPG, JPEG, PNG, PDF' : 'MP3, MP4, OGG, 3GPP, WAV, M4A';
       return cb(new Error(
@@ -61,13 +57,12 @@ const storage = multer.diskStorage({
   },
 });
 
-// ✅ CORRECTION : Augmenter la limite de fichiers pour supporter les images multiples
 const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10 Mo max par fichier
-    files: 21, // ✅ Augmenté à 21 (10 modelImages + 10 tissuImages + 1 audioFile)
+    fileSize: 10 * 1024 * 1024,
+    files: 21,
   },
 });
 
