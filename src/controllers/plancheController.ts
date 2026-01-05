@@ -4,10 +4,6 @@ import { cloudinary } from "../lib/cloudinary";
 
 export async function createPlanche(req: Request, res: Response) {
   try {
-    if (!req.user || req.user.role !== "ADMIN") {
-      return res.status(403).json({ message: "Accès refusé" })
-    }
-
     const { title, subCategoryId } = req.body
 
     const uploadedFiles: string[] = []
