@@ -4,97 +4,120 @@ import { cloudinary } from "../lib/cloudinary";
 
 export async function createPlanche(req: Request, res: Response) {
   try {
-    const { title, subCategoryId } = req.body
-
-    const uploadedFiles: string[] = []
-    const uploadedAudios: string[] = []
-
-    const files = req.files as {
-      planche?: Express.Multer.File[]
-      audios?: Express.Multer.File[]
+    /* ---------- Sécurité ---------- */
+    if (!req.user || req.user.role !== "ADMIN") {
+      return res.status(403).json({ message: "Accès refusé" });
     }
+
+    /* ---------- Validation body ---------- */
+    const { title, subCategoryId } = req.body;
+
+    if (!title || !subCategoryId) {
+      return res.status(400).json({
+        message: "title et subCategoryId sont requis",
+      });
+    }
+
+    /* ---------- Typage fichiers ---------- */
+    const files = req.files as {
+      planche?: Express.Multer.File[];
+      audios?: Express.Multer.File[];
+    };
 
     if (!files?.planche?.length) {
-      return res.status(400).json({ message: "Fichiers PDF ou images requis" })
+      return res
+        .status(400)
+        .json({ message: "Fichiers PDF ou images requis" });
     }
 
-    /* ---------- Upload PDF / Images ---------- */
-    for (const file of files.planche) {
-      const upload = await cloudinary.uploader.upload(file.path, {
-        folder: "mont-sinai/planches",
-        resource_type:  "image",
-        timeout: 60000,
-      })
-      uploadedFiles.push(upload.secure_url)
-    }
-
-    /* ---------- Upload Audios ---------- */
-    if (files.audios) {
-      for (const audio of files.audios) {
-        const upload = await cloudinary.uploader.upload(audio.path, {
-          folder: "mont-sinai/audios",
-          resource_type: "video",
-          timeout: 60000,
-        })
-        uploadedAudios.push(upload.secure_url)
-      }
-    }
-
-    const subCategoryExists = await prisma.subCategory.findFirst({
-      where: { 
-        id: subCategoryId,
-      }
-    })
+    /* ---------- Vérifier sous-catégorie ---------- */
+    const subCategoryExists = await prisma.subCategory.findUnique({
+      where: { id: subCategoryId },
+    });
 
     if (!subCategoryExists) {
-      return res.status(404).json({ message: "Sous-catégorie non trouvée ou n'appartient pas à la catégorie" })
+      return res.status(404).json({
+        message: "Sous-catégorie non trouvée",
+      });
     }
 
+    /* ---------- Upload planches (images / PDF) ---------- */
+    const uploadedFiles = (
+      await Promise.all(
+        files.planche.map(async (file) => {
+          const upload = await cloudinary.uploader.upload(file.path, {
+            folder: "mont-sinai/planches",
+            resource_type: "image",
+            timeout: 60000,
+          });
+          return upload.secure_url;
+        })
+      )
+    ).filter(Boolean);
+
+    /* ---------- Upload audios ---------- */
+ 
+   const uploadedAudios = files.audios?.length
+  ? (
+      await Promise.all(
+        files.audios.map(async (audio) => {
+          const upload = await cloudinary.uploader.upload(audio.path, {
+            folder: "mont-sinai/audios",
+            resource_type: "video",
+          });
+
+          if (!upload.secure_url) {
+            throw new Error("Échec upload audio Cloudinary");
+          }
+
+          return upload.secure_url;
+        })
+      )
+    )
+  : [];
+  
     /* ---------- Transaction Prisma ---------- */
-    const planche = await prisma.$transaction(async (tx) => {
-      return await tx.planche.create({
+    const planche = await prisma.planche.create({
         data: {
           title,
-          planche: uploadedFiles,
-          audio: uploadedAudios,
+          files: uploadedFiles,
+          audioFiles: uploadedAudios,
           subCategoryId,
           uploadedById: req.user!.id,
         } as any,
-
         include: {
           subCategory: {
             include: {
               category: {
                 include: {
-                  catalogue: true
-                }
-              }
-            }
+                  catalogue: true,
+                },
+              },
+            },
           },
-          
           uploadedBy: {
             select: {
               id: true,
               fullName: true,
-              email: true
-            }
-          }
-        }
+              email: true,
+            },
+          },
+        },
       })
-    })
 
     return res.status(201).json({
       success: true,
       message: "Planche créée avec succès",
       data: planche,
-    })
+    });
 
   } catch (err: any) {
-    console.error("❌ createPlanche error:", err)
-    res.status(500).json({
+    console.error("❌ createPlanche error:", err);
+
+    return res.status(500).json({
       success: false,
-      message: err.message || "Erreur serveur",
-    })
+      message: "Erreur serveur",
+    });
   }
 }
 

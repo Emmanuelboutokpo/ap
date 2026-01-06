@@ -8,3 +8,4 @@ cloudinary.config({
 });
 
 export { cloudinary};
+

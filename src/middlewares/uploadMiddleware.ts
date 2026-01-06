@@ -12,7 +12,7 @@ if (!fs.existsSync(uploadFolderPath)) {
 // ✅ CORRECTION : Ajout des nouveaux champs modelImages et tissuImages
 const allowedFileTypes: Record<string, RegExp> = {
   planche: /\.(jpg|jpeg|png|pdf)$/i,
-  audio: /\.(mp3|mp4|ogg|3gpp|wav|m4a)$/i,
+  audios: /\.(mp3|mp4|ogg|3gpp|wav|m4a)$/i,
 };
 
 const fileFilter = (
@@ -61,7 +61,7 @@ const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 150 * 1024 * 1024,
+    fileSize: 100 * 1024 * 1024,
     files: 21,
   },
 });
