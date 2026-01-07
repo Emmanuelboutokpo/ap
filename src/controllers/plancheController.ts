@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import prisma from "../lib/prisma";
 import { cloudinary } from "../lib/cloudinary";
+import { Prisma } from "@prisma/client";
 
 export async function createPlanche(req: Request, res: Response) {
   try {
@@ -123,40 +124,72 @@ export async function createPlanche(req: Request, res: Response) {
   }
 }
 
+ 
 export async function getPlanches(req: Request, res: Response) {
   try {
-    
     /* ---------- Query params ---------- */
     const page = Math.max(Number(req.query.page) || 1, 1)
     const limit = Math.min(Number(req.query.limit) || 10, 50)
-    const search = req.query.search?.toString()
-    const categoryId = req.query.categoryId?.toString()
-    const subCategoryId = req.query.subCategoryId?.toString()
-    const fileType = req.query.fileType as "PDF" | "IMAGE" | undefined
-
     const skip = (page - 1) * limit
 
-    /* ---------- Filters ---------- */
-    const where: any = {}
+    const search = req.query.search?.toString()
+    const fileType = req.query.fileType as "PDF" | "IMAGE" | undefined
+    const subCategoryId = req.query.subCategoryId?.toString()
+    const categoryId = req.query.categoryId?.toString()
+    const catalogueId = req.query.catalogueId?.toString()
 
+    /* ---------- Where clause ---------- */
+    const where: Prisma.PlancheWhereInput = {}
+
+    /* --- Global search --- */
     if (search) {
-      where.title = {
-        contains: search,
-        mode: "insensitive",
-      }
-    }
-
-    if (fileType) {
-      where.fileType = fileType
+      where.OR = [
+        {
+          title: {
+            contains: search,
+            mode: "insensitive",
+          },
+        },
+        {
+          uploadedBy: {
+            fullName: {
+              contains: search,
+              mode: "insensitive",
+            },
+          },
+        },
+        {
+          subCategory: {
+            name: {
+              contains: search,
+              mode: "insensitive",
+            },
+          },
+        },
+        {
+          subCategory: {
+            category: {
+              name: {
+                contains: search,
+                mode: "insensitive",
+              },
+            },
+          },
+        },
+      ]
     }
 
     if (subCategoryId) {
       where.subCategoryId = subCategoryId
     }
 
-    if (categoryId) {
+    /* --- Relation filters (merge-safe) --- */
+    if (categoryId || catalogueId) {
       where.subCategory = {
-        categoryId
+        category: {
+          ...(categoryId && { id: categoryId }),
+          ...(catalogueId && { catalogueId }),
+        },
       }
     }
 
@@ -195,15 +228,15 @@ export async function getPlanches(req: Request, res: Response) {
       },
       data: planches,
     })
-
-  } catch (err: any) {
-    console.error("❌ getPlanches error:", err)
+  } catch (error) {
+    console.error("❌ getPlanches error:", error)
     res.status(500).json({
       success: false,
       message: "Erreur serveur",
     })
   }
 }
+
 
 export async function getPlancheById(req: Request, res: Response) {
   try {
