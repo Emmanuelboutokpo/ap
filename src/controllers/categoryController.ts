@@ -62,7 +62,6 @@ export async function getCategories(req: Request, res: Response) {
   }
 }
 
-
 export async function getCategoryById(req: Request, res: Response) {
   try {
     const { id } = req.params

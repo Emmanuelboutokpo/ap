@@ -46,9 +46,11 @@ export async function createPlanche(req: Request, res: Response) {
     const uploadedFiles = (
       await Promise.all(
         files.planche.map(async (file) => {
+          const isPDF = file.mimetype === 'application/pdf';
           const upload = await cloudinary.uploader.upload(file.path, {
             folder: "mont-sinai/planches",
-            resource_type: "image",
+            resource_type: isPDF ? "raw" : "image",
+            ...(isPDF && { format: 'pdf' }),
             timeout: 60000,
           });
           return upload.secure_url;
@@ -124,7 +126,6 @@ export async function createPlanche(req: Request, res: Response) {
   }
 }
 
- 
 export async function getPlanches(req: Request, res: Response) {
   try {
     /* ---------- Query params ---------- */
@@ -133,7 +134,6 @@ export async function getPlanches(req: Request, res: Response) {
     const skip = (page - 1) * limit
 
     const search = req.query.search?.toString()
-    const fileType = req.query.fileType as "PDF" | "IMAGE" | undefined
     const subCategoryId = req.query.subCategoryId?.toString()
     const categoryId = req.query.categoryId?.toString()
     const catalogueId = req.query.catalogueId?.toString()
@@ -237,7 +237,6 @@ export async function getPlanches(req: Request, res: Response) {
   }
 }
 
-
 export async function getPlancheById(req: Request, res: Response) {
   try {
     const { id } = req.params
@@ -268,7 +267,6 @@ export async function getPlancheById(req: Request, res: Response) {
   }
 }
   
-
 export async function getCatalogues(req: Request, res: Response) {
  try {
     const catalogues = await prisma.catalogue.findMany();
@@ -295,10 +293,13 @@ export async function updatePlanche(req: Request, res: Response) {
 
     if (files?.files) {
       for (const file of files.files) {
-        const upload = await cloudinary.uploader.upload(file.path, {
-          folder: "mont-sinai/planches",
-          resource_type: "raw",
-        })
+         const isPDF = file.mimetype === 'application/pdf';
+          const upload = await cloudinary.uploader.upload(file.path, {
+            folder: "mont-sinai/planches",
+            resource_type: isPDF ? "raw" : "image",
+            ...(isPDF && { format: 'pdf' }),
+            timeout: 60000,
+          });
         newFiles.push(upload.secure_url)
       }
     }

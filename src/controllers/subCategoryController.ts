@@ -141,7 +141,6 @@ export async function updateSubCategory(req: Request, res: Response) {
   }
 }
 
-
 export async function deleteSubCategory(req: Request, res: Response) {
   try {
     if (!req.user || req.user.role !== "ADMIN") {
