@@ -49,7 +49,7 @@ export async function createPlanche(req: Request, res: Response) {
           const isPDF = file.mimetype === 'application/pdf';
           const upload = await cloudinary.uploader.upload(file.path, {
             folder: "mont-sinai/planches",
-            resource_type:  isPDF ? "raw" : "image",
+            resource_type:  isPDF ? "image" : "image",
             ...(isPDF && { format: 'pdf' }),
             timeout: 60000,
             type  : 'upload'
@@ -373,7 +373,7 @@ export async function updatePlanche(req: Request, res: Response) {
         const isPDF = file.mimetype === 'application/pdf';
         const upload = await cloudinary.uploader.upload(file.path, {
           folder: "mont-sinai/planches",
-          resource_type: isPDF ? "raw" : "image",
+          resource_type: isPDF ? "image" : "image",
           ...(isPDF && { format: 'pdf' }),
           timeout: 60000,
           type  : 'upload'
