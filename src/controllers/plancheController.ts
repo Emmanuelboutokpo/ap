@@ -72,7 +72,7 @@ export async function createPlanche(req: Request, res: Response) {
           });
 
           if (!upload.secure_url) {
-            throw new Error("Échec upload audio Cloudinary");
+            throw new Error("Échec upload audio Cloudinary !");
           }
 
           return upload.secure_url;
@@ -114,7 +114,7 @@ export async function createPlanche(req: Request, res: Response) {
 
     return res.status(201).json({
       success: true,
-      message: "Planche créée avec succès",
+      message: "Planche créée avec succès !",
       data: planche,
     });
 
