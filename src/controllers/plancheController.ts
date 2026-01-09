@@ -49,9 +49,10 @@ export async function createPlanche(req: Request, res: Response) {
           const isPDF = file.mimetype === 'application/pdf';
           const upload = await cloudinary.uploader.upload(file.path, {
             folder: "mont-sinai/planches",
-            resource_type:  isPDF ? "image" : "image",
+            resource_type:  isPDF ? "raw" : "image",
             ...(isPDF && { format: 'pdf' }),
             timeout: 60000,
+            type  : 'upload'
           });
           return upload.secure_url;
         })
@@ -67,6 +68,7 @@ export async function createPlanche(req: Request, res: Response) {
           const upload = await cloudinary.uploader.upload(audio.path, {
             folder: "mont-sinai/audios",
             resource_type: "video",
+            type  : 'upload'
           });
 
           if (!upload.secure_url) {
@@ -371,9 +373,10 @@ export async function updatePlanche(req: Request, res: Response) {
         const isPDF = file.mimetype === 'application/pdf';
         const upload = await cloudinary.uploader.upload(file.path, {
           folder: "mont-sinai/planches",
-          resource_type: isPDF ? "image" : "image",
+          resource_type: isPDF ? "raw" : "image",
           ...(isPDF && { format: 'pdf' }),
           timeout: 60000,
+          type  : 'upload'
         });
         newFiles.push(upload.secure_url);
       }
