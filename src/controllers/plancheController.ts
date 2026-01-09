@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import prisma from "../lib/prisma";
-import { cloudinary } from "../lib/cloudinary";
+import { cloudinary, extractPublicIdFromUrl } from "../lib/cloudinary";
 import { Prisma } from "@prisma/client";
 
 export async function createPlanche(req: Request, res: Response) {
@@ -279,57 +279,159 @@ export async function getCatalogues(req: Request, res: Response) {
 
 export async function updatePlanche(req: Request, res: Response) {
   try {
-    const { id } = req.params
-
-    const planche = await prisma.planche.findUnique({ where: { id } })
-    if (!planche) {
-      return res.status(404).json({ message: "Planche introuvable" })
+    
+    if (!req.user || req.user.role !== "ADMIN") {
+      return res.status(403).json({ message: "Accès refusé" });
     }
 
-    const newFiles: string[] = []
-    const newAudios: string[] = []
+    const { id } = req.params;
+    const { title, subCategoryId } = req.body;
 
-    const files = req.files as any
+    const planche = await prisma.planche.findUnique({ 
+      where: { id },
+      include: {
+        subCategory: true,
+        uploadedBy: true
+      }
+    });
+    
+    if (!planche) {
+      return res.status(404).json({ message: "Planche introuvable" });
+    }
 
-    if (files?.files) {
-      for (const file of files.files) {
-         const isPDF = file.mimetype === 'application/pdf';
-          const upload = await cloudinary.uploader.upload(file.path, {
-            folder: "mont-sinai/planches",
-            resource_type: isPDF ? "raw" : "image",
-            ...(isPDF && { format: 'pdf' }),
-            timeout: 60000,
-          });
-        newFiles.push(upload.secure_url)
+    if (subCategoryId && subCategoryId !== planche.subCategoryId) {
+      const subCategoryExists = await prisma.subCategory.findUnique({
+        where: { id: subCategoryId },
+      });
+      
+      if (!subCategoryExists) {
+        return res.status(404).json({
+          message: "Sous-catégorie non trouvée",
+        });
       }
     }
 
-    if (files?.audios) {
+    const updateData: any = {};
+
+    if (title !== undefined) {
+      updateData.title = title;
+    }
+
+    if (subCategoryId !== undefined) {
+      updateData.subCategoryId = subCategoryId;
+    }
+
+    const files = req.files as {
+      planche?: Express.Multer.File[];
+      audios?: Express.Multer.File[];
+    };
+
+    const filesToRemove = req.body.removeFiles ? JSON.parse(req.body.removeFiles) : [];
+    const audiosToRemove = req.body.removeAudios ? JSON.parse(req.body.removeAudios) : [];
+
+    if (filesToRemove.length > 0) {
+      for (const fileUrl of filesToRemove) {
+        const publicId = extractPublicIdFromUrl(fileUrl);
+        if (publicId) {
+          try {
+
+            await cloudinary.uploader.destroy(publicId, {
+              resource_type: fileUrl.includes('.pdf') ? 'raw' : 'image'
+            });
+
+          } catch (cloudinaryError) {
+            console.error(`❌ Erreur suppression Cloudinary pour ${publicId}:`, cloudinaryError);
+          }
+        }
+      }
+    }
+
+    if (audiosToRemove.length > 0) {
+      for (const audioUrl of audiosToRemove) {
+        const publicId = extractPublicIdFromUrl(audioUrl);
+        if (publicId) {
+          try {
+            await cloudinary.uploader.destroy(publicId, {
+              resource_type: 'video'
+            });
+            console.log(`✅ Audio supprimé de Cloudinary: ${publicId}`);
+          } catch (cloudinaryError) {
+            console.error(`❌ Erreur suppression audio Cloudinary pour ${publicId}:`, cloudinaryError);
+          }
+        }
+      }
+    }
+
+    const filteredFiles = planche.files.filter(file => !filesToRemove.includes(file));
+    const filteredAudios = planche.audioFiles.filter(audio => !audiosToRemove.includes(audio));
+
+    const newFiles: string[] = [];
+    if (files?.planche && files.planche.length > 0) {
+      for (const file of files.planche) {
+        const isPDF = file.mimetype === 'application/pdf';
+        const upload = await cloudinary.uploader.upload(file.path, {
+          folder: "mont-sinai/planches",
+          resource_type: isPDF ? "raw" : "image",
+          ...(isPDF && { format: 'pdf' }),
+          timeout: 60000,
+        });
+        newFiles.push(upload.secure_url);
+      }
+    }
+
+    const newAudios: string[] = [];
+    if (files?.audios && files.audios.length > 0) {
       for (const audio of files.audios) {
         const upload = await cloudinary.uploader.upload(audio.path, {
           folder: "mont-sinai/audios",
           resource_type: "video",
-        })
-        newAudios.push(upload.secure_url)
+          timeout: 60000,
+        });
+        newAudios.push(upload.secure_url);
       }
     }
 
-    const updated = await prisma.$transaction(async (tx) => {
-      return await tx.planche.update({
-        where: { id },
-        data: {
-          files: [...planche.files, ...newFiles],
-          audioFiles: [...planche.audioFiles, ...newAudios],
-        }
-      })
-    })
+    if (filesToRemove.length > 0 || (files?.planche && files.planche.length > 0)) {
+      updateData.files = [...filteredFiles, ...newFiles];
+    }
+    
+    if (audiosToRemove.length > 0 || (files?.audios && files.audios.length > 0)) {
+      updateData.audioFiles = [...filteredAudios, ...newAudios];
+    }
 
-    res.json({ success: true, data: updated })
+    const updated = await prisma.planche.update({
+      where: { id },
+      data: updateData,
+      include: {
+        subCategory: {
+          include: {
+            category: true,
+          },
+        },
+        uploadedBy: {
+          select: {
+            id: true,
+            fullName: true,
+          },
+        },
+      },
+    });
+
+    res.json({ 
+      success: true, 
+      message: "Planche mise à jour avec succès",
+      data: updated 
+    });
 
   } catch (err: any) {
-    res.status(500).json({ success: false, message: err.message })
+    console.error("❌ updatePlanche error:", err);
+    res.status(500).json({ 
+      success: false, 
+      message: "Erreur serveur lors de la mise à jour" 
+    });
   }
 }
+
 
 export async function deletePlanche(req: Request, res: Response) {
   try {

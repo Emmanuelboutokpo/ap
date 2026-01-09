@@ -9,3 +9,15 @@ cloudinary.config({
 
 export { cloudinary};
 
+
+ export const extractPublicIdFromUrl = (url: string): string | null => {
+      try {
+        const matches = url.match(/\/upload\/(?:v\d+\/)?(.+?)(?:\.[^\.]+)?$/);
+        if (matches && matches[1]) {
+          return matches[1]; 
+        }
+        return null;
+      } catch {
+        return null;
+      }
+ };
