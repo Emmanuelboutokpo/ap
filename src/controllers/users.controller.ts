@@ -109,7 +109,85 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
   }
 };
 
+export const updateUserRole = async (req: Request, res: Response): Promise<void> => {
+  const { id } = req.params;
+  const { role } = req.body;
 
+  try {
+    // ✅ Vérifier que le rôle est valide
+    const validRoles = ['CHORISTE', 'ADMIN'];
+    if (!role || !validRoles.includes(role)) {
+      res.status(400).json({
+        success: false,
+        message: `Rôle invalide. Les rôles valides sont: ${validRoles.join(', ')}`,
+      });
+      return;
+    }
+
+    // ✅ Vérifier si l'utilisateur existe
+    const existingUser = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+      },
+    });
+
+    if (!existingUser) {
+      res.status(404).json({
+        success: false,
+        message: 'Utilisateur non trouvé',
+      });
+      return;
+    }
+
+    if (existingUser.role === 'ADMIN' && role !== 'ADMIN') {
+      const adminCount = await prisma.user.count({
+        where: { role: 'ADMIN' },
+      });
+      
+      if (adminCount <= 1) {
+        res.status(400).json({
+          success: false,
+          message: 'Impossible de retirer le dernier administrateur',
+        });
+        return;
+      }
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id },
+      data: {
+        role: role as any, 
+      },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        role: true,
+        status: true,
+        createdAt: true,
+      },
+    });
+
+    res.json({
+      success: true,
+      data: updatedUser,
+      message: `Rôle de l'utilisateur mis à jour avec succès (${existingUser.role} → ${role})`,
+    });
+
+  } catch (error) {
+    console.error('❌ Error updating user role:', error);
+    res.status(500).json({
+      success: false,
+      message: "Erreur lors de la mise à jour du rôle de l'utilisateur",
+      ...(process.env.NODE_ENV === 'development' && { 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      }),
+    });
+  }
+};
 
 export const deleteUser = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;

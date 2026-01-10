@@ -1,9 +1,9 @@
 import { Router } from 'express';
 
-import { deleteUser, getEmployeesAndControleurs, getUser, getUsers, updateUser } from '../controllers/users.controller';
+import { deleteUser, getEmployeesAndControleurs, getUser, getUsers, updateUser, updateUserRole } from '../controllers/users.controller';
 
 import type { Router as ExpressRouter } from 'express';
-import { requireSignin } from '../middlewares/requireSignin';
+import { onlyMaitre, requireSignin } from '../middlewares/requireSignin';
 const router: ExpressRouter = Router();
 
 
@@ -12,6 +12,8 @@ const router: ExpressRouter = Router();
   router.get('/users/team', getEmployeesAndControleurs);
   router.get('/users', getUsers);
   router.put('/users/:id', updateUser);
+  router.put('/users/:id/role', onlyMaitre, updateUserRole);
   router.delete('/users/:id', deleteUser);
+
 
 export default router;
