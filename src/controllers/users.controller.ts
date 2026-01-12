@@ -5,50 +5,63 @@ import { Prisma } from '@prisma/client';
 // controllers/user.controller.ts
 export const getUsers = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { search } = req.query;
-    
+    const search =
+      typeof req.query.search === "string" ? req.query.search.trim() : "";
+
+    const page = Math.max(Number(req.query.page) || 1, 1);
+    const limit = Math.min(Number(req.query.limit) || 10, 50);
+    const skip = (page - 1) * limit;
+
     const where: Prisma.UserWhereInput = {
-      role: { in: ["CHORISTE"] }
+      role: { in: ["CHORISTE", "ADMIN"] },
+      ...(search && {
+        OR: [
+          { email: { contains: search, mode: "insensitive" } },
+          { fullName: { contains: search, mode: "insensitive" } },
+        ],
+      }),
     };
 
-    // Recherche corrigée
-    if (search && typeof search === 'string' && search.trim().length > 0) {
-      const searchTerm = search.trim();
-      where.OR = [
-        { email: { contains: searchTerm, mode: 'insensitive' } },
-      ];
-    }
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          email: true,
+          fullName: true,
+          role: true,
+          createdAt: true,
+        },
+      }),
+      prisma.user.count({ where }),
+    ]);
 
-    const users = await prisma.user.findMany({
-      where,       
-    });
-
-    // Transformer les données
-    const result = users.map(user => ({
-      id: user.id,
-      email: user.email,
-      fullName: user.fullName,
-      role: user.role,
-      createdAt: user.createdAt,
-    }));
-
-    res.json({
+    res.status(200).json({
       success: true,
-      data: result,
-      count: result.length,
+      data: users,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
     });
-
   } catch (error) {
-    console.error('❌ Error in getEmployeesAndControleurs:', error);
+    console.error("❌ Error in getUsers:", error);
+
     res.status(500).json({
       success: false,
-      message: 'Erreur serveur',
-      ...(process.env.NODE_ENV === 'development' && { 
-        error: error instanceof Error ? error.message : 'Unknown error' 
-      })
+      message: "Erreur serveur",
+      ...(process.env.NODE_ENV === "development" && {
+        error: error instanceof Error ? error.message : "Unknown error",
+      }),
     });
   }
 };
+
 
 // controllers/user.controller.ts
 export const updateUser = async (req: Request, res: Response): Promise<void> => {

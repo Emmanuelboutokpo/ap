@@ -26,7 +26,7 @@ export const signUpEmail = async (req: Request, res: Response): Promise<void> =>
     if (existingUser) throw new Error('User with this email already exists');
 
     const hashedPassword = await hashPassword(password);
-    const newUser = await prisma.user.create({
+    await prisma.user.create({
       data: {
         email,
         password: hashedPassword,
@@ -71,7 +71,7 @@ export const verifyOtp = async (req: Request, res: Response) => {
 
   await redis.del(`otp:${email}`);
 
-  await prisma.user.update({
+  const users = await prisma.user.update({
     where: { id: user.id },
     data: {
       status: "PENDING_MC_APPROVAL",
@@ -79,6 +79,7 @@ export const verifyOtp = async (req: Request, res: Response) => {
   });
 
   res.status(200).json({
+    users,
     message:
       "Email vérifié avec succès. Votre compte est en attente de validation par le Maitre de choeur.",
   });

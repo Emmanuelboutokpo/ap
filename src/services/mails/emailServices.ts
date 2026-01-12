@@ -134,9 +134,7 @@ export const sendEmail = async (to: string, subject: string, content: string, us
       subject: `CHORALE MONT-SINAI CALAVI CENTRE - ${subject}`,
       html: html,
     });
-    
-    console.log(`Email sent to ${to} with subject: ${subject}`);
-         
+             
     } catch (error) {
         console.error('Failed to send email', error);
     }
