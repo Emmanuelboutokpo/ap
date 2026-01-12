@@ -4,7 +4,7 @@ import prisma from '../lib/prisma';
 import { Redis } from "@upstash/redis";
 import { Request, Response } from "express";
 import { generateAccessToken, generateRefreshToken, verifyToken } from "../lib/jwt";
-import { sendConfirmationEmail, sendOPT } from "../services/mails/emailServices";
+import { sendConfirmationEmail, sendDesactiverEmail, sendOPT } from "../services/mails/emailServices";
 
 const hashPassword = async (password: string) => bcrypt.hashSync(password, 10);
 
@@ -250,6 +250,23 @@ export const validateUser = async (req: Request, res: Response) => {
   });
 };
 
+export const desactiverUser = async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  const user = await prisma.user.update({
+    where: { id},
+    data: { status: "PENDING_MC_APPROVAL" },
+  });
+
+  await sendDesactiverEmail(user.email, {
+    name: user.fullName || "User",
+  });
+
+  res.status(200).json({
+    message: "Compte desactiver avec succès",
+    user,
+  });
+};
 
 export const logoutUser = async (req: Request, res: Response) => {
   try {

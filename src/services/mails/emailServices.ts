@@ -188,3 +188,36 @@ export const sendConfirmationEmail = async (to: string, user: any) => {
 
   await sendEmail(to, subject, content, user);
 };
+
+export const sendDesactiverEmail = async (to: string, user: any) => {
+  const subject = "Désactivation de votre compte – CHORALE MONT-SINAÏ CALAVI CENTRE";
+
+  const content = `
+  Bonjour ${user?.fullName ?? ""},  
+  <br/><br/>
+  Nous vous informons que votre compte sur la plateforme officielle de la  
+  <strong>CHORALE MONT-SINAÏ CALAVI CENTRE</strong> a été <strong>désactivé</strong>.
+  <br/><br/>
+  À partir de maintenant, vous n’avez plus accès aux fonctionnalités de la plateforme,
+  notamment :
+  <ul>
+    <li>Les planches et partitions</li>
+    <li>Les audios de chants</li>
+    <li>Les catégories et sous-catégories</li>
+  </ul>
+  <br/>
+  Cette décision peut être liée à une mise à jour administrative, une inactivité prolongée
+  ou à toute autre raison interne.
+  <br/><br/>
+  Si vous pensez qu’il s’agit d’une erreur ou si vous souhaitez obtenir plus d’informations,
+  nous vous invitons à contacter l’administration de la chorale.
+  <br/><br/>
+  Nous vous remercions pour votre compréhension.
+  <br/><br/>
+  Cordialement,  
+  <br/>
+  <strong>L’administration de la CHORALE MONT-SINAÏ CALAVI CENTRE</strong>
+`;
+
+  await sendEmail(to, subject, content, user);
+};

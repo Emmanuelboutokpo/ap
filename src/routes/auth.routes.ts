@@ -1,7 +1,7 @@
 import { Router } from 'express';
 const router: Router = Router();
 
-import { signUpEmail, verifyOtp, logoutUser, refreshTokens, login, resendOtp, validateUser } from '../controllers/auth.controller';
+import { signUpEmail, verifyOtp, logoutUser, refreshTokens, login, resendOtp, validateUser, desactiverUser } from '../controllers/auth.controller';
 import { isRequestValidated } from '../validator/auth.validator';
 
 router.post('/signup', signUpEmail, isRequestValidated);    
@@ -11,5 +11,6 @@ router.post('/login', login, isRequestValidated);
 router.post('/refresh-token', refreshTokens);
 router.post('/logout/:id', logoutUser);
 router.put('/validate/:id', validateUser);
+router.put('/desactived/:id', desactiverUser);
 
 export default router;
